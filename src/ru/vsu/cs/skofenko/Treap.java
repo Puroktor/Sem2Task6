@@ -6,7 +6,7 @@ public class Treap<T extends Comparable<T>> implements Iterable<T> {
     private static final Random RND = new Random();
 
     private static class Node<T extends Comparable<T>> {
-        private final T x;
+        private T x;
         private final int y;
 
         private int size = 1;
@@ -90,9 +90,14 @@ public class Treap<T extends Comparable<T>> implements Iterable<T> {
     }
 
     public T put(T value) {
-        T temp = remove(value);
-        add(value);
-        return temp;
+        Node<T> temp = getNode(value);
+        if (temp == null) {
+            add(value);
+            return null;
+        } else {
+            temp.x = value; //св-ва BST не нарушатся, т.к. они equal
+            return temp.x;
+        }
     }
 
     public T remove(T value) {
@@ -152,17 +157,24 @@ public class Treap<T extends Comparable<T>> implements Iterable<T> {
         return size;
     }
 
-    public T get(T value) {
+    private Node<T> getNode(T value) {
         Node<T> curr = root;
         while (curr != null) {
             int sw = curr.x.compareTo(value);
             if (sw == 0)
-                return curr.x;
+                return curr;
             else if (sw < 0)
                 curr = curr.right;
             else
                 curr = curr.left;
         }
+        return null;
+    }
+
+    public T get(T value) {
+        var res = getNode(value);
+        if (res != null)
+            return res.x;
         return null;
     }
 
