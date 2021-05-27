@@ -82,6 +82,20 @@ public class Treap<T extends Comparable<T>> implements Iterable<T> {
         }
     } // O(h)
 
+    //в первую <= key, во вторую > key
+    private static <T extends Comparable<T>> Pair<T> splitWithLess(Node<T> root, T key) {
+        if (root == null) {
+            return new Pair<>(null, null);
+        }
+        if (root.x.compareTo(key) <= 0) {
+            Pair<T> pair = splitWithLess(root.right, key);
+            return new Pair<>(new Node<>(root.x, root.y, root.left, pair.less), pair.greater);
+        } else {
+            Pair<T> pair = splitWithLess(root.left, key);
+            return new Pair<>(pair.less, new Node<>(root.x, root.y, pair.greater, root.right));
+        }
+    } // O(h)
+
     private void add(T value) {
         Pair<T> pair = split(root, value);
         pair.less = merge(pair.less, new Node<>(value));
@@ -103,45 +117,13 @@ public class Treap<T extends Comparable<T>> implements Iterable<T> {
     public T remove(T value) {
         if (root == null)
             return null;
-        if (root.x.compareTo(value) == 0) {
-            T temp = root.x;
-            root = merge(root.left, root.right);
-            size--;
-            return temp;
-        }
-        Node<T> prev = null;
-        Node<T> curr = root;
-        Queue<Boolean> turnedLeft = new LinkedList<>();
-        while (curr != null) {
-            int sw = curr.x.compareTo(value);
-            if (sw == 0)
-                break;
-            else {
-                prev = curr;
-                if (sw < 0) {
-                    curr = curr.right;
-                    turnedLeft.add(false);
-                } else {
-                    curr = curr.left;
-                    turnedLeft.add(true);
-                }
-            }
-        }
-        if (curr == null)
+        Pair<T> lessAndTmp = split(root, value);
+        Pair<T> equalAndGreater = splitWithLess(lessAndTmp.greater, value);
+        if (equalAndGreater.less==null)
             return null;
-        if (prev.left != null && prev.left.equals(curr)) {
-            prev.left = merge(curr.left, curr.right);
-        } else {
-            prev.right = merge(curr.left, curr.right);
-        }
-        T temp = curr.x;
-        curr = root;
-        while (!turnedLeft.isEmpty()) {
-            curr.size--;
-            curr = turnedLeft.poll() ? curr.left : curr.right;
-        }
+        root = merge(lessAndTmp.less, equalAndGreater.greater);
         size--;
-        return temp;
+        return equalAndGreater.less.x;
     }
 
     public void clear() {
@@ -180,7 +162,7 @@ public class Treap<T extends Comparable<T>> implements Iterable<T> {
 
     // можно разбить на less, greater, equal, но там константа хуже, лучше как в обычном BST
     public boolean contains(T value) {
-        return get(value) != null;
+        return getNode(value) != null;
     }
 
     public static <T extends Comparable<T>> Iterable<T> inOrderValues(Node<T> treeNode) {
